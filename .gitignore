@@ -1,0 +1,9 @@
+
+EWARM/
+Drivers/
+settings/
+.settings/
+KeyToolsSTM_RC522/
+.*
+!.gitignore
+CSpyServer.log
