@@ -85,6 +85,7 @@ void HAL_UART_RxCpltCallback( UART_HandleTypeDef *  huart ) {
 
 void keytools() {
 	uint8_t i;
+	uint32_t timeout;
 
 	if (Rx[0] != CMD) {
 		return;
@@ -176,8 +177,11 @@ void keytools() {
 		UidCL1[1] = Rx[4];
 		UidCL1[2] = Rx[5];
 		UidCL1[3] = Rx[6];
+		timeout = Rx[7];
+		timeout |= Rx[8] << 8;
 
-		if (!keygrab(&nkey)) {
+
+		if (!keygrab(&nkey, timeout)) {
 			Tx[0] = CMD + 1;
 			Tx[1] = 0;
 			Tx[2] = 4;
@@ -335,7 +339,7 @@ void keytools() {
 }
 
 
-uint8_t keygrab(uint8_t *nkey){
+uint8_t keygrab(uint8_t *nkey, uint32_t timeout){
 
 	uint16_t inbit, outbit;
 	uint8_t cnt[170], ncnt;
@@ -355,7 +359,7 @@ uint8_t keygrab(uint8_t *nkey){
 	while(1){
 
 		do{
-			scs = getStream_A(cnt, &ncnt, 1000);
+			scs = getStream_A(cnt, &ncnt, timeout);
 			if(!scs){
 				return 0;
 			}

@@ -1,9 +1,4 @@
-/*
- * KeyTools.h
- *
- *  Created on: 8 рту. 2019 у.
- *      Author: Sergey
- */
+
 
 #ifndef INC_KEYTOOLS_H_
 #define INC_KEYTOOLS_H_
@@ -26,7 +21,7 @@
 
 
 void keytools(void);
-uint8_t keygrab(uint8_t *nkey);
+uint8_t keygrab(uint8_t *nkey, uint32_t timeout);
 void conv(uint32_t *a, uint8_t *d);
 
 #endif /* INC_KEYTOOLS_H_ */
