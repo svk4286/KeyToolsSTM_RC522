@@ -364,7 +364,8 @@ uint8_t keygrab(uint8_t *nkey){
 		}
 		if(GrabOK){
 			GrabOK = 0;
-			if(!ZeroFilter || (j_aut >= AUT_MAX)){
+			if((!ZeroFilter && (j_aut > 1)) || (j_aut >= AUT_MAX)){
+				*nkey = j_aut;
 				break;
 			}
 		}
