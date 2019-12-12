@@ -8,7 +8,7 @@
 #ifndef STANDARDS_H_
 #define STANDARDS_H_
 
-#include <stdint.h>
+//#include <stdint.h>
 #include <stdbool.h>
 
 #define CONFIGURATION_NAME_LENGTH_MAX   32
@@ -155,10 +155,10 @@ typedef struct {
 
 extern ConfigurationType ActiveConfiguration;
 
-void ConfigurationInit(void);
-void ConfigurationSetById(ConfigurationEnum Configuration);
-void ConfigurationGetByName(char* Configuration, uint16_t BufferSize);
-bool ConfigurationSetByName(const char* Configuration);
-void ConfigurationGetList(char* ConfigurationList, uint16_t BufferSize);
+//void ConfigurationInit(void);
+//void ConfigurationSetById(ConfigurationEnum Configuration);
+//void ConfigurationGetByName(char* Configuration, uint16_t BufferSize);
+//bool ConfigurationSetByName(const char* Configuration);
+//void ConfigurationGetList(char* ConfigurationList, uint16_t BufferSize);
 
 #endif /* STANDARDS_H_ */

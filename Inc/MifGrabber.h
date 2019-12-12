@@ -133,7 +133,7 @@ C1 C2 C3 	read 	write 	increment 	decrement,
 
 
 uint16_t MifareClassicGrabber(uint8_t* Buffer, uint16_t BitCount);
-void MifareClassicAppInit1K(void);
+void MifareClassicAppInit1K_Grabber(void);
 
 
 #endif /* INC_MIFCLASS_H_ */

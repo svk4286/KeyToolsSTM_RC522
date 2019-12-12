@@ -24,10 +24,12 @@
 #define EMULATOR		0x10
 #define READ_CARD		0x12
 #define WRITE_CARD		0x14
+#define BREAK			0x16
 
 
 void keytools(void);
 uint8_t keygrab(uint8_t *nkey);
 void conv(uint32_t *a, uint8_t *d);
+uint8_t emul();
 
 #endif /* INC_KEYTOOLS_H_ */

@@ -6,7 +6,7 @@
 #include "KeyTools.h"
 
 
-uint8_t UidCL1[ISO14443A_CL_UID_SIZE] = {0xE4, 0x70, 0x51, 0x73};
+uint8_t UidGR1[ISO14443A_CL_UID_SIZE] = {0xE4, 0x70, 0x51, 0x73};
 uint8_t uidLength;
 uint8_t UidCL2[ISO14443A_CL_UID_SIZE];
 
@@ -113,7 +113,7 @@ bool ISO14443ASelect_Grabber(void* Buffer, uint16_t* BitCount, uint8_t* UidCL, u
 }
 
 
-void MifareClassicAppInit1K(void)
+void MifareClassicAppInit1K_Grabber(void)
 {
     State = STATE_IDLE;
     CardATQAValue = MFCLASSIC_1K_ATQA_VALUE;
@@ -167,7 +167,7 @@ uint16_t MifareClassicGrabber(uint8_t* Buffer, uint16_t BitCount){
             /* For Longer UIDs indicate that more UID-Bytes follow (-> CL2) */
 
 //                MemoryReadBlock(UidCL1, MEM_UID_CL1_ADDRESS, MEM_UID_CL1_SIZE);
-        	if (ISO14443ASelect_Grabber(Buffer, &BitCount, UidCL1, CardSAKValue)) {
+        	if (ISO14443ASelect_Grabber(Buffer, &BitCount, UidGR1, CardSAKValue)) {
                         AccessAddress = 0xff; /* invalid, force reload */
             State = STATE_ACTIVE;
         	}

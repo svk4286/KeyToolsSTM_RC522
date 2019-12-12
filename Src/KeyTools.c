@@ -1,13 +1,14 @@
 
-#include <MifGrabber.h>
+#include "MifGrabber.h"
 #include <stdlib.h>
 #include "Get_A.h"
-//#include "Put_A.h"
 #include "Send_A.h"
 #include "pn532.h"
 #include "Macros.h"
 #include "RC522.h"
 #include "KeyTools.h"
+#include "MifareClassic.h"
+#include "Configuration.h"
 
 #define AUT_MAX 10
 #define TIMEOUT 1000
@@ -18,10 +19,10 @@ extern SPI_HandleTypeDef hspi1;
 extern SPI_HandleTypeDef hspi2;
 extern UART_HandleTypeDef huart1;
 extern __IO uint32_t uwTick;
-extern uint8_t UidCL1[], uidLength;
+extern uint8_t UidGR1[], uidLength;
 extern Uid uid;
 extern uint8_t RC522;
-
+extern uint8_t my_card[];
 
 uint8_t Tx[512], Rx[64];
 uint16_t  fv_1;
@@ -35,6 +36,8 @@ uint8_t nd;
 uint8_t cnt[170], ncnt;
 MIFARE_Key key;
 uint8_t bufferSize;
+ConfigurationType ActiveConfiguration;
+uint8_t Break = 1;
 
 
 void conv(uint32_t *a, uint8_t *d){
@@ -57,21 +60,49 @@ void InitVirtCard(){
 	HAL_TIM_OC_Start(&htim1, TIM_CHANNEL_4);
 	HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_4);
 
+	MifareClassicAppInit1K_Grabber();
 	MifareClassicAppInit1K();
+	ActiveConfiguration.UidSize = 4;
 
 }
 
 
 void HAL_UART_RxCpltCallback( UART_HandleTypeDef *  huart ) {
 
-	if(!GtCmd){
-		if(Rx[2] == 3){
+	if(Break == 0){
+		if(!GtCmd){
+			if (Rx[2] == 3){
+				if(Rx[1] == BREAK){
+					Break = 1;
+					return;
+				}else{
+					HAL_UART_Receive_DMA(&huart1, Rx, 3);
+				}
+			}else{
+				HAL_UART_Receive_DMA(huart, Rx + 3, Rx[2] - 3);
+				GtCmd = 1;
+				return;
+			}
+		}else{
+			GtCmd = 0;
+			HAL_UART_Receive_DMA(&huart1, Rx, 3);
+		}
+		Tx[0] = CMD + 1;
+		Tx[1] = 0;
+		Tx[2] = 4;
+		Tx[3] = 1;				// Error code
+		HAL_UART_Transmit(&huart1, Tx, Tx[2], 1000);
+		return;
+	}
+
+	if (!GtCmd) {
+		if (Rx[2] == 3) {
 			RxOK = 1;
 			return;
 		}
 		HAL_UART_Receive_DMA(huart, Rx + 3, Rx[2] - 3);
 		GtCmd = 1;
-	}else{
+	} else {
 		RxOK = 1;
 	}
 }
@@ -143,7 +174,7 @@ void keytools() {
 			}
 		} else {
 			SAM_Config(&hspi1);
-			if ((!readPassiveTargetID(&hspi1, PN532_MIFARE_ISO14443A, UidCL1,
+			if ((!readPassiveTargetID(&hspi1, PN532_MIFARE_ISO14443A, UidGR1,
 					&uidLength, 50)) || uidLength != 4) {
 				Tx[0] = CMD + 1;
 				Tx[1] = 0;
@@ -155,10 +186,10 @@ void keytools() {
 			Tx[0] = CMD + 1;
 			Tx[1] = GET_UID + 1;
 			Tx[2] = 7;
-			Tx[3] = UidCL1[3];
-			Tx[4] = UidCL1[2];
-			Tx[5] = UidCL1[1];
-			Tx[6] = UidCL1[0];
+			Tx[3] = UidGR1[3];
+			Tx[4] = UidGR1[2];
+			Tx[5] = UidGR1[1];
+			Tx[6] = UidGR1[0];
 		}
 		HAL_UART_Transmit(&huart1, Tx, Tx[2], 1000);
 		break;
@@ -166,10 +197,10 @@ void keytools() {
 
 	case GET_GRAB:
 		InitVirtCard();
-		UidCL1[0] = Rx[3];
-		UidCL1[1] = Rx[4];
-		UidCL1[2] = Rx[5];
-		UidCL1[3] = Rx[6];
+		UidGR1[0] = Rx[3];
+		UidGR1[1] = Rx[4];
+		UidGR1[2] = Rx[5];
+		UidGR1[3] = Rx[6];
 
 		if (!keygrab(&nkey)) {
 			Tx[0] = CMD + 1;
@@ -215,7 +246,7 @@ void keytools() {
 			}
 		}
 		else{
-			if (!mifareclassic_AuthenticateBlock(&hspi1, UidCL1, Rx[3], Rx[4], (Rx + 5))){
+			if (!mifareclassic_AuthenticateBlock(&hspi1, UidGR1, Rx[3], Rx[4], (Rx + 5))){
 				Tx[0] = CMD + 1;
 				Tx[1] = 0;
 				Tx[2] = 4;
@@ -321,6 +352,49 @@ void keytools() {
 		HAL_UART_Transmit(&huart1, Tx, Tx[2], 1000);
 		break;
 
+	case EMULATOR:
+
+		Tx[0] = CMD + 1;
+		Tx[1] = EMULATOR + 1;
+		Tx[2] = 3;
+		HAL_UART_Transmit(&huart1, Tx, Tx[2], 1000);
+		InitVirtCard();
+		Break = 0;
+		GtCmd = 0;
+		HAL_UART_Receive_DMA(&huart1, Rx, 3);
+		while(!emul()){
+			MifareClassicAppInit1K();		//—брос Halt
+		}
+		Tx[0] = CMD + 1;
+		Tx[1] = BREAK +1;
+		Tx[2] = 3;
+		HAL_UART_Transmit(&huart1, Tx, Tx[2], 1000);
+		break;
+
+	case READ_CARD:
+		Tx[0] = CMD + 1;
+		Tx[1] = READ_CARD + 1;
+		Tx[2] = 16 + 3;
+		memcpy(Tx + 3, my_card + 16*Rx[3], 16);
+		HAL_UART_Transmit(&huart1, Tx, Tx[2], 1000);
+		break;
+
+	case WRITE_CARD:
+		Tx[0] = CMD + 1;
+		Tx[1] = WRITE_CARD + 1;
+		Tx[2] = 3;
+		memcpy(my_card + 16*Rx[3], Rx + 4, 16);
+		HAL_UART_Transmit(&huart1, Tx, Tx[2], 1000);
+		break;
+
+	case BREAK:
+		Tx[0] = CMD + 1;
+		Tx[1] = 0;
+		Tx[2] = 4;
+		Tx[3] = 1;				// Error code
+		HAL_UART_Transmit(&huart1, Tx, Tx[2], 1000);
+		break;
+
 	default:
 		break;
 
@@ -359,8 +433,10 @@ uint8_t keygrab(uint8_t *nkey){
 			data_B[nd][i] = data_A[nd][i];
 		}
 		outbit = MifareClassicGrabber( data_B[nd], inbit);
-		if(EndOfFrame){
+		if(EndOfFrame && j_aut){
 			break;
+		}else{
+			EndOfFrame = 0;
 		}
 		if(GrabOK){
 			GrabOK = 0;
@@ -387,3 +463,50 @@ uint8_t keygrab(uint8_t *nkey){
 	*nkey = j_aut;
 	return 1;
 }
+
+
+uint8_t emul(){
+
+	uint16_t inbit, outbit;
+	uint8_t  lastbit = 0;
+	uint8_t scs;
+	uint8_t CustomParity;
+
+	nd = 0;
+
+	__HAL_TIM_SET_COUNTER(&htim1, 0);
+	srand(uwTick);
+
+	while(1){
+		if(Break){
+			return 1;
+		}
+		do{
+			scs = getStream_A(cnt, &ncnt, TIMEOUT);
+			if(!scs){
+				return 0;
+			}
+		}while(!ncnt);
+		inbit = ConvertStream_A(cnt, ncnt, data_A[nd], &ndata_A[nd], &lastbit);
+
+		for(uint8_t i = 0; i < ndata_A[nd]; i++){
+			data_B[nd][i] = data_A[nd][i];
+		}
+		outbit = MifareClassicAppProcess( data_B[nd], inbit);
+		if(outbit & 0x1000){
+			CustomParity = 1;
+		}else{
+			CustomParity = 0;
+		}
+		ndata_B[nd] = 0;
+		if(outbit == 4){
+			SendBits_A(data_B[nd][0], 4, lastbit);
+			ndata_B[nd] = 1;
+		}
+		else if(outbit >= 8){
+			ndata_B[nd] = outbit  >> 3;
+			SendData_A(data_B[nd], ndata_B[nd], lastbit, CustomParity);
+		}
+	}
+}
+
