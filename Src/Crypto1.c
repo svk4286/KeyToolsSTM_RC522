@@ -2,9 +2,6 @@
 #include "KeyTools.h"
 
 
-// uncomment if platform is not avr
-#define NO_INLINE_ASM 1
-
 #define PRNG_MASK        0x002D0000UL
 /* x^16 + x^14 + x^13 + x^11 + 1 */
 
@@ -35,9 +32,7 @@
 
 
 /* Plattform independend code */
-
 /* avoid including avr-Files in case of test */
-
 
 #define SHIFT24(__b0, __b1, __b2, __in) \
                __b0 = (__b0>>1) | (__b1<<7); \
@@ -63,14 +58,6 @@
 
 
 /* Generate odd parity bit */
-
-//#define ODD_PARITY(val)	                   \
-//        (__extension__({                   \
-//        uint8_t __p = (uint8_t)(val);      \
-//        __p ^= ((__p >> 4)|(__p << 4)) ;   \
-//        __p ^= __p >> 2 ;                  \
-//        ((--__p) >> 1) & 1;  /* see "avr/util.h" */ \
-// }))
 
 #define ODD_PARITY(val) (OddParityByteTable[val])
 

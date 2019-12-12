@@ -11,7 +11,7 @@ extern "C" {
 
 #include "stm32f1xx_hal.h"
 
-uint8_t PutData_A(uint8_t *buf, uint8_t n, uint8_t lastbit);
+uint8_t SendData_A(uint8_t *buf, uint8_t n, uint8_t lastbit, uint8_t cp);
 uint8_t PutStream_A(uint16_t *stream, uint16_t ns, uint8_t lastbit);
 uint8_t SendBits_A(uint8_t data, uint8_t ndata, uint8_t lastbit);
 

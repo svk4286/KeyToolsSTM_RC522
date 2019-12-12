@@ -95,6 +95,7 @@ bool ISO14443ASelect(void* Buffer, uint16_t* BitCount, uint8_t* UidCL, uint8_t S
     }
 }
 
+
 bool ISO14443AWakeUp(void* Buffer, uint16_t* BitCount, uint16_t ATQAValue, bool FromHalt)
 {
     uint8_t* DataPtr = (uint8_t*) Buffer;

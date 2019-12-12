@@ -30,12 +30,6 @@ static enum {
     STATE_RESTORE
 } State;
 
-//static uint8_t CardResponse[4];
-//static uint8_t ReaderResponse[4];
-//static uint8_t CurrentAddress;
-//static uint8_t KeyInUse;
-//static uint8_t BlockBuffer[MEM_BYTES_PER_BLOCK];
-//static uint8_t AccessConditions[MEM_ACC_GPB_SIZE]; /* Access Conditions + General purpose Byte */
 static uint8_t AccessAddress;
 static uint16_t CardATQAValue;
 static uint8_t CardSAKValue;
@@ -44,135 +38,79 @@ static bool FromHalt = false;
 #define BYTE_SWAP(x) (((uint8_t)(x)>>4)|((uint8_t)(x)<<4))
 #define NO_ACCESS 0x07
 
-//void ISO14443AAppendCRCA(void* Buffer, uint16_t ByteCount) {
-//    uint16_t Checksum = 0x6363;
-//    uint8_t* DataPtr = (uint8_t*) Buffer;
-//
-//    while(ByteCount--) {
-//        uint8_t Byte = *DataPtr++;
-//
-//        Byte ^= (uint8_t) (Checksum & 0x00FF);
-//        Byte ^= Byte << 4;
-//
-//        Checksum = (Checksum >> 8) ^ ( (uint16_t) Byte << 8 ) ^
-//                ( (uint16_t) Byte << 3 ) ^ ( (uint16_t) Byte >> 4 );
-//    }
-//
-//    *DataPtr++ = (Checksum >> 0) & 0x00FF;
-//    *DataPtr = (Checksum >> 8) & 0x00FF;
-//}
-//
-//bool ISO14443ACheckCRCA(void* Buffer, uint16_t ByteCount)
-//{
-//    uint16_t Checksum = 0x6363;
-//    uint8_t* DataPtr = (uint8_t*) Buffer;
-//
-//    while(ByteCount--) {
-//        uint8_t Byte = *DataPtr++;
-//
-//        Byte ^= (uint8_t) (Checksum & 0x00FF);
-//        Byte ^= Byte << 4;
-//
-//        Checksum = (Checksum >> 8) ^ ( (uint16_t) Byte << 8 ) ^
-//                ( (uint16_t) Byte << 3 ) ^ ( (uint16_t) Byte >> 4 );
-//    }
-//
-//    return (DataPtr[0] == ((Checksum >> 0) & 0xFF)) && (DataPtr[1] == ((Checksum >> 8) & 0xFF));
-//}
-//
-//
-//bool ISO14443ASelect(void* Buffer, uint16_t* BitCount, uint8_t* UidCL, uint8_t SAKValue)
-//{
-//    uint8_t* DataPtr = (uint8_t*) Buffer;
-//    uint8_t NVB = DataPtr[1];
-//    //uint8_t CollisionByteCount = (NVB >> 4) & 0x0F;
-//    //uint8_t CollisionBitCount =  (NVB >> 0) & 0x0F;
-//
-//    switch (NVB) {
-//    case ISO14443A_NVB_AC_START:
-//        /* Start of anticollision procedure.
-//        * Send whole UID CLn + BCC */
-//        DataPtr[0] = UidCL[0];
-//        DataPtr[1] = UidCL[1];
-//        DataPtr[2] = UidCL[2];
-//        DataPtr[3] = UidCL[3];
-//        DataPtr[4] = ISO14443A_CALC_BCC(DataPtr);
-//
-//        *BitCount = ISO14443A_CL_FRAME_SIZE;
-//
-//        X_9320 = 1;
-//
-//        return false;
-//
-//    case ISO14443A_NVB_AC_END:
-//        /* End of anticollision procedure.
-//        * Send SAK CLn if we are selected. */
-//        if (    (DataPtr[2] == UidCL[0]) &&
-//                (DataPtr[3] == UidCL[1]) &&
-//                (DataPtr[4] == UidCL[2]) &&
-//                (DataPtr[5] == UidCL[3]) ) {
-//
-//            DataPtr[0] = SAKValue;
-//            ISO14443AAppendCRCA(Buffer, 1);
-//
-//            *BitCount = ISO14443A_SAK_FRAME_SIZE;
-//            return true;
-//        } else {
-//            /* We have not been selected. Don't send anything. */
-//            *BitCount = 0;
-//            return false;
-//        }
-//    default:
-//    {
-//        uint8_t CollisionByteCount = ((NVB >> 4) & 0x0f) - 2;
-//        uint8_t CollisionBitCount  = (NVB >> 0) & 0x0f;
-//        uint8_t mask = 0xFF >> (8 - CollisionBitCount);
-//        // Since the UidCL does not contain the BCC, we have to distinguish here
-//        if (
-//                ((CollisionByteCount == 5 || (CollisionByteCount == 4 && CollisionBitCount > 0)) && memcmp(UidCL, &DataPtr[2], 4) == 0 && (ISO14443A_CALC_BCC(UidCL) & mask) == (DataPtr[6] & mask))
-//                ||
-//                (CollisionByteCount == 4 && CollisionBitCount == 0 && memcmp(UidCL, &DataPtr[2], 4) == 0)
-//                ||
-//                (CollisionByteCount < 4 && memcmp(UidCL, &DataPtr[2], CollisionByteCount) == 0 && (UidCL[CollisionByteCount] & mask) == (DataPtr[CollisionByteCount + 2] & mask))
-//        )
-//        {
-//            DataPtr[0] = UidCL[0];
-//            DataPtr[1] = UidCL[1];
-//            DataPtr[2] = UidCL[2];
-//            DataPtr[3] = UidCL[3];
-//            DataPtr[4] = ISO14443A_CALC_BCC(DataPtr);
-//
-//            *BitCount = ISO14443A_CL_FRAME_SIZE;
-//        } else {
-//            *BitCount = 0;
-//        }
-//        return false;
-//    }
-//        /* TODO: No anticollision supported */
-//        *BitCount = 0;
-//        return false;
-//    }
-//}
-//
-//
-//bool ISO14443AWakeUp(void* Buffer, uint16_t* BitCount, uint16_t ATQAValue, bool FromHalt)
-//{
-//    uint8_t* DataPtr = (uint8_t*) Buffer;
-//
-//    if ( ((! FromHalt) && (DataPtr[0] == ISO14443A_CMD_REQA)) ||
-//         (DataPtr[0] == ISO14443A_CMD_WUPA) ){
-//        DataPtr[0] = (ATQAValue >> 0) & 0x00FF;
-//        DataPtr[1] = (ATQAValue >> 8) & 0x00FF;
-//
-//        *BitCount = ISO14443A_ATQA_FRAME_SIZE;
-//
-//        return true;
-//    } else {
-//        *BitCount = 0;
-//
-//        return false;
-//    }
-//}
+
+bool ISO14443ASelect_Grabber(void* Buffer, uint16_t* BitCount, uint8_t* UidCL, uint8_t SAKValue)
+{
+    uint8_t* DataPtr = (uint8_t*) Buffer;
+    uint8_t NVB = DataPtr[1];
+    //uint8_t CollisionByteCount = (NVB >> 4) & 0x0F;
+    //uint8_t CollisionBitCount =  (NVB >> 0) & 0x0F;
+
+    switch (NVB) {
+    case ISO14443A_NVB_AC_START:
+        /* Start of anticollision procedure.
+        * Send whole UID CLn + BCC */
+        DataPtr[0] = UidCL[0];
+        DataPtr[1] = UidCL[1];
+        DataPtr[2] = UidCL[2];
+        DataPtr[3] = UidCL[3];
+        DataPtr[4] = ISO14443A_CALC_BCC(DataPtr);
+
+        *BitCount = ISO14443A_CL_FRAME_SIZE;
+
+        X_9320 = 1;
+
+        return false;
+
+    case ISO14443A_NVB_AC_END:
+        /* End of anticollision procedure.
+        * Send SAK CLn if we are selected. */
+        if (    (DataPtr[2] == UidCL[0]) &&
+                (DataPtr[3] == UidCL[1]) &&
+                (DataPtr[4] == UidCL[2]) &&
+                (DataPtr[5] == UidCL[3]) ) {
+
+            DataPtr[0] = SAKValue;
+            ISO14443AAppendCRCA(Buffer, 1);
+
+            *BitCount = ISO14443A_SAK_FRAME_SIZE;
+            return true;
+        } else {
+            /* We have not been selected. Don't send anything. */
+            *BitCount = 0;
+            return false;
+        }
+    default:
+    {
+        uint8_t CollisionByteCount = ((NVB >> 4) & 0x0f) - 2;
+        uint8_t CollisionBitCount  = (NVB >> 0) & 0x0f;
+        uint8_t mask = 0xFF >> (8 - CollisionBitCount);
+        // Since the UidCL does not contain the BCC, we have to distinguish here
+        if (
+                ((CollisionByteCount == 5 || (CollisionByteCount == 4 && CollisionBitCount > 0)) && memcmp(UidCL, &DataPtr[2], 4) == 0 && (ISO14443A_CALC_BCC(UidCL) & mask) == (DataPtr[6] & mask))
+                ||
+                (CollisionByteCount == 4 && CollisionBitCount == 0 && memcmp(UidCL, &DataPtr[2], 4) == 0)
+                ||
+                (CollisionByteCount < 4 && memcmp(UidCL, &DataPtr[2], CollisionByteCount) == 0 && (UidCL[CollisionByteCount] & mask) == (DataPtr[CollisionByteCount + 2] & mask))
+        )
+        {
+            DataPtr[0] = UidCL[0];
+            DataPtr[1] = UidCL[1];
+            DataPtr[2] = UidCL[2];
+            DataPtr[3] = UidCL[3];
+            DataPtr[4] = ISO14443A_CALC_BCC(DataPtr);
+
+            *BitCount = ISO14443A_CL_FRAME_SIZE;
+        } else {
+            *BitCount = 0;
+        }
+        return false;
+    }
+        /* TODO: No anticollision supported */
+        *BitCount = 0;
+        return false;
+    }
+}
 
 
 void MifareClassicAppInit1K(void)
@@ -229,7 +167,7 @@ uint16_t MifareClassicGrabber(uint8_t* Buffer, uint16_t BitCount){
             /* For Longer UIDs indicate that more UID-Bytes follow (-> CL2) */
 
 //                MemoryReadBlock(UidCL1, MEM_UID_CL1_ADDRESS, MEM_UID_CL1_SIZE);
-        	if (ISO14443ASelect(Buffer, &BitCount, UidCL1, CardSAKValue)) {
+        	if (ISO14443ASelect_Grabber(Buffer, &BitCount, UidCL1, CardSAKValue)) {
                         AccessAddress = 0xff; /* invalid, force reload */
             State = STATE_ACTIVE;
         	}

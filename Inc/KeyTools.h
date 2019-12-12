@@ -21,6 +21,9 @@
 #define READ_BLOCK		0x0A
 #define WRITE_BLOCK		0x0C
 #define UNLOCK			0x0E
+#define EMULATOR		0x10
+#define READ_CARD		0x12
+#define WRITE_CARD		0x14
 
 
 void keytools(void);

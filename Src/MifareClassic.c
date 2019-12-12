@@ -6,16 +6,12 @@
  */
 
 #include "MifareClassic.h"
-
 #include "ISO14443-3A.h"
 #include "ClassicCard.h"
 #include "KeyTools.h"
 #include "Log.h"
 #include "Configuration.h"
-//#include "../Codec/ISO14443-2A.h"
-//#include "../Memory.h"
 #include "Crypto1.h"
-//#include "../Random.h"
 
 
 #define MFCLASSIC_MINI_4B_ATQA_VALUE    0x0004

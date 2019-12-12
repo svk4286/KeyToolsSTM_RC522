@@ -2,7 +2,8 @@
 #include <MifGrabber.h>
 #include <stdlib.h>
 #include "Get_A.h"
-#include "Put_A.h"
+//#include "Put_A.h"
+#include "Send_A.h"
 #include "pn532.h"
 #include "Macros.h"
 #include "RC522.h"
@@ -31,7 +32,7 @@ uint8_t j_aut, ZeroFilter, GrabOK, EndOfFrame, KeyAB[AUT_MAX], BlockNumber[AUT_M
 uint8_t data_A[FRAME_SIZE][BUFFER_SIZE], data_B[FRAME_SIZE][BUFFER_SIZE];
 uint8_t ndata_A[FRAME_SIZE], ndata_B[FRAME_SIZE];
 uint8_t nd;
-//uint8_t key[6];
+uint8_t cnt[170], ncnt;
 MIFARE_Key key;
 uint8_t bufferSize;
 
@@ -331,7 +332,6 @@ void keytools() {
 uint8_t keygrab(uint8_t *nkey){
 
 	uint16_t inbit, outbit;
-	uint8_t cnt[170], ncnt;
 	uint8_t  lastbit = 0;
 	uint8_t scs;
 
@@ -376,7 +376,7 @@ uint8_t keygrab(uint8_t *nkey){
 		}
 		else if(outbit >= 8){
 			ndata_B[nd] = outbit  >> 3;
-			PutData_A(data_B[nd], ndata_B[nd], lastbit);
+			SendData_A(data_B[nd], ndata_B[nd], lastbit, 0);
 		}
 		nd++;
 		if(nd >= FRAME_SIZE){
